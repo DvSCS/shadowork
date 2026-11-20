@@ -1,0 +1,264 @@
+1
+00:00:00,600 --> 00:00:00,900
+I
+I work at a hospital.
+
+2
+00:00:00,900 --> 00:00:01,250
+I work
+I work at a hospital.
+
+3
+00:00:01,250 --> 00:00:01,550
+Eu work
+I work at a hospital.
+
+4
+00:00:01,550 --> 00:00:01,700
+Eu trabalho
+I work at a hospital.
+
+5
+00:00:01,700 --> 00:00:02,350
+Eu trabalho at
+I work at a hospital.
+
+6
+00:00:02,350 --> 00:00:02,500
+Eu trabalho em
+I work at a hospital.
+
+7
+00:00:02,500 --> 00:00:03,150
+Eu trabalho em a
+I work at a hospital.
+
+8
+00:00:03,150 --> 00:00:03,300
+Eu trabalho em um
+I work at a hospital.
+
+9
+00:00:03,300 --> 00:00:05,600
+Eu trabalho em um hospital.
+I work at a hospital.
+
+10
+00:00:06,300 --> 00:00:06,415
+I
+I have been looking forward to this.
+
+11
+00:00:06,415 --> 00:00:06,950
+I have been looking forward to
+I have been looking forward to this.
+
+12
+00:00:06,950 --> 00:00:07,065
+Eu have been looking forward to
+I have been looking forward to this.
+
+13
+00:00:07,065 --> 00:00:10,276
+Eu estava ansioso por
+I have been looking forward to this.
+
+14
+00:00:10,276 --> 00:00:11,300
+Eu estava ansioso por this.
+I have been looking forward to this.
+
+15
+00:00:12,100 --> 00:00:12,750
+Could you
+Could you give me a hand?
+
+16
+00:00:12,750 --> 00:00:14,276
+Você poderia
+Could you give me a hand?
+
+17
+00:00:14,276 --> 00:00:14,813
+Você poderia give me
+Could you give me a hand?
+
+18
+00:00:14,813 --> 00:00:15,463
+Você poderia me dar
+Could you give me a hand?
+
+19
+00:00:15,463 --> 00:00:17,100
+Você poderia me dar a hand?
+Could you give me a hand?
+
+20
+00:00:17,900 --> 00:00:18,550
+Let me
+Let me figure it out.
+
+21
+00:00:18,550 --> 00:00:18,920
+Deixe eu
+Let me figure it out.
+
+22
+00:00:18,920 --> 00:00:19,570
+Deixe eu figure it out.
+Let me figure it out.
+
+23
+00:00:19,570 --> 00:00:22,400
+Deixe eu descobrir.
+Let me figure it out.
+
+24
+00:00:23,200 --> 00:00:23,850
+It is not
+It is not as hard as it looks.
+
+25
+00:00:23,850 --> 00:00:24,454
+Não é
+It is not as hard as it looks.
+
+26
+00:00:24,454 --> 00:00:25,104
+Não é as hard as
+It is not as hard as it looks.
+
+27
+00:00:25,104 --> 00:00:26,496
+Não é tão difícil quanto
+It is not as hard as it looks.
+
+28
+00:00:26,496 --> 00:00:28,200
+Não é tão difícil quanto it looks.
+It is not as hard as it looks.
+
+29
+00:00:29,000 --> 00:00:29,650
+Take your time.
+Take your time. There is no rush.
+
+30
+00:00:29,650 --> 00:00:31,537
+Vá com calma.
+Take your time. There is no rush.
+
+31
+00:00:31,537 --> 00:00:32,271
+Vá com calma. There is no
+Take your time. There is no rush.
+
+32
+00:00:32,271 --> 00:00:32,921
+Vá com calma. Não há rush.
+Take your time. There is no rush.
+
+33
+00:00:32,921 --> 00:00:34,000
+Vá com calma. Não há pressa.
+Take your time. There is no rush.
+
+34
+00:00:34,800 --> 00:00:35,450
+What do you
+What do you usually do after work?
+
+35
+00:00:35,450 --> 00:00:36,141
+O que você
+What do you usually do after work?
+
+36
+00:00:36,141 --> 00:00:36,791
+O que você usually do
+What do you usually do after work?
+
+37
+00:00:36,791 --> 00:00:38,009
+O que você costuma fazer
+What do you usually do after work?
+
+38
+00:00:38,009 --> 00:00:39,800
+O que você costuma fazer after work?
+What do you usually do after work?
+
+39
+00:00:40,600 --> 00:00:41,250
+I would rather
+I would rather stay in tonight.
+
+40
+00:00:41,250 --> 00:00:42,483
+Eu preferiria
+I would rather stay in tonight.
+
+41
+00:00:42,483 --> 00:00:43,133
+Eu preferiria stay in
+I would rather stay in tonight.
+
+42
+00:00:43,133 --> 00:00:44,074
+Eu preferiria ficar em casa
+I would rather stay in tonight.
+
+43
+00:00:44,074 --> 00:00:45,600
+Eu preferiria ficar em casa tonight.
+I would rather stay in tonight.
+
+44
+00:00:46,400 --> 00:00:47,050
+That makes sense.
+That makes sense. I feel the same way.
+
+45
+00:00:47,050 --> 00:00:48,242
+Isso faz sentido.
+That makes sense. I feel the same way.
+
+46
+00:00:48,242 --> 00:00:48,892
+Isso faz sentido. I feel
+That makes sense. I feel the same way.
+
+47
+00:00:48,892 --> 00:00:49,542
+Isso faz sentido. Eu me sinto the same way.
+That makes sense. I feel the same way.
+
+48
+00:00:49,542 --> 00:00:51,400
+Isso faz sentido. Eu me sinto da mesma forma.
+That makes sense. I feel the same way.
+
+49
+00:00:52,200 --> 00:00:52,850
+We can
+We can pick up where we left off.
+
+50
+00:00:52,850 --> 00:00:52,955
+Podemos
+We can pick up where we left off.
+
+51
+00:00:52,955 --> 00:00:53,605
+Podemos pick up
+We can pick up where we left off.
+
+52
+00:00:53,605 --> 00:00:54,485
+Podemos retomar
+We can pick up where we left off.
+
+53
+00:00:54,485 --> 00:00:57,200
+Podemos retomar where we left off.
+We can pick up where we left off.
