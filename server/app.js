@@ -4,6 +4,7 @@ import { validateProfile, subtitleRequestMatches, translateCues, fail } from './
 import { createStorage, summarize } from './storage.js';
 import { adminConfigured, authenticated, sameSecret, signSession, sessionCookie, requestOrigin, checkOrigin, clientKey, sealTicket, openTicket } from './security.js';
 import { searchSubtitles, downloadSubtitles } from './subtitle-provider.js';
+import { createAutomatic } from './automatic.js';
 
 const MAX_BODY = 3500000;
 const ID = /^[a-zA-Z0-9_-]{1,80}$/;
@@ -42,6 +43,7 @@ async function translationRequest(env, url, payload) {
   try { return await response.json(); } catch { throw fail('O tradutor retornou uma resposta inválida.', 502); }
 }
 export function createHandler({ env = process.env, storage = createStorage(env), search = searchSubtitles, download = downloadSubtitles } = {}) {
+  const automatic = createAutomatic({ env, storage, search: search === searchSubtitles ? undefined : search, download });
   return async function handler(req, res) {
     let addon = false;
     function send(status, value, mime = 'application/json; charset=utf-8', headers = {}) {
@@ -56,18 +58,26 @@ export function createHandler({ env = process.env, storage = createStorage(env),
       const routedPath = url.searchParams.get('__route') || url.pathname;
       if (!routedPath.startsWith('/') || routedPath.includes('?') || routedPath.includes('#')) throw fail('Rota inválida.');
       const parts = routedPath.split('/').filter(Boolean).map(decodeURIComponent);
-      addon = parts[0] === 'a';
+      addon = ['a', 'auto', 'subtitles'].includes(parts[0]) || parts[0] === 'manifest.json';
       if (req.method === 'OPTIONS') {
         if (!addon) return send(405, { error: 'Preflight não disponível para a administração.' });
         return send(204, '', 'text/plain', { 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Allow-Origin': '*' });
       }
       if (addon) {
         if (!['GET', 'HEAD'].includes(req.method)) return send(405, { error: 'O addon permite somente leitura.' }, undefined, { Allow: 'GET, HEAD, OPTIONS' });
+        const automaticBase = (env.BASE_URL || origin).replace(/\/$/, '');
+        if (parts[0] === 'manifest.json') return send(200, automatic.manifest(automaticBase));
+        if (parts[0] === 'subtitles' && parts[2]) {
+          const extra = new URLSearchParams((parts[3] || '').replace(/\.json$/, ''));
+          for (const field of ['videoID', 'videoId', 'videoHash', 'videoSize', 'filename']) if (!extra.has(field) && url.searchParams.has(field)) extra.set(field, url.searchParams.get(field).replace(/\.json$/, ''));
+          return send(200, await automatic.options(parts[1], parts[2].replace(/\.json$/, ''), extra.toString(), automaticBase));
+        }
+        if (parts[0] === 'auto' && parts[1] && parts[2]?.endsWith('.srt')) return send(200, await automatic.subtitle(parts[1], parts[2].slice(0, -4)), 'application/x-subrip; charset=utf-8');
         if (!ID.test(parts[1] || '')) throw fail('Sessão inválida.', 404);
         const profile = parts[1] === DEMO.id ? demo() : storage.configured ? await storage.get(parts[1]) : null;
         if (!profile) throw fail('Sessão não encontrada.', 404);
         const publicBase = (env.BASE_URL || origin).replace(/\/$/, ''), base = `${publicBase}/a/${profile.id}`;
-        if (parts[2] === 'manifest.json') return send(200, { id: `community.scenelingo.${profile.id}`, version: '1.1.0', name: `SceneLingo · ${profile.title}`, description: 'Inglês com legendas progressivas, configuradas no estúdio SceneLingo.', resources: ['subtitles'], types: ['movie', 'series'], catalogs: [], behaviorHints: { configurable: true, configurationRequired: false }, logo: `${publicBase}/assets/logo.svg` });
+        if (parts[2] === 'manifest.json') return send(200, { id: `community.scenelingo.${profile.id}`, version: '1.3.0', name: `SceneLingo · ${profile.title}`, description: 'Inglês com legendas progressivas, configuradas no estúdio SceneLingo.', resources: ['subtitles'], types: ['movie', 'series'], catalogs: [], behaviorHints: { configurable: true, configurationRequired: false }, logo: `${publicBase}/assets/logo.svg` });
         if (parts[2] === 'subtitles' && parts[4] && (parts[4].endsWith('.json') || parts.length >= 6)) {
           const extra = new URLSearchParams((parts[5] || '').replace(/\.json$/, ''));
           // Some proxies expose &-separated Stremio path extras as query fields.
@@ -84,7 +94,7 @@ export function createHandler({ env = process.env, storage = createStorage(env),
         throw fail('Recurso não encontrado.', 404);
       }
       if (parts[0] !== 'api') throw fail('Rota não encontrada.', 404);
-      if (parts[1] === 'health' && req.method === 'GET') return send(200, { name: 'SceneLingo', version: '1.1.0', runtime: 'vercel-node', storageConfigured: storage.configured, adminConfigured: adminConfigured(env) });
+      if (parts[1] === 'health' && req.method === 'GET') return send(200, { name: 'SceneLingo', version: '1.3.0', runtime: 'vercel-node', storageConfigured: storage.configured, adminConfigured: adminConfigured(env) });
       const signedIn = authenticated(req, env), configured = adminConfigured(env);
       if (parts[1] === 'auth' && parts[2] === 'status' && req.method === 'GET') return send(200, { configured, authenticated: signedIn, storageConfigured: storage.configured, mode: configured && storage.configured ? 'cloud' : 'demo' });
       if (!['GET', 'HEAD'].includes(req.method)) checkOrigin(req, origin);

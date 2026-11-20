@@ -5,6 +5,9 @@
   "outputDirectory": "public",
   "functions": { "api/index.js": { "maxDuration": 60 } },
   "rewrites": [
+    { "source": "/manifest.json", "destination": "/api/index?__route=/manifest.json" },
+    { "source": "/subtitles/:path*", "destination": "/api/index?__route=/subtitles/:path*" },
+    { "source": "/auto/:path*", "destination": "/api/index?__route=/auto/:path*" },
     { "source": "/a/:path*", "destination": "/api/index?__route=/a/:path*" },
     { "source": "/api/:path*", "destination": "/api/index?__route=/api/:path*" }
   ],

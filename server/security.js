@@ -22,9 +22,9 @@ export function authenticated(req, env) {
   return verifySession(cookies[SESSION_COOKIE], env.ADMIN_TOKEN);
 }
 export function sessionCookie(value, secure = true, clear = false) { return `${SESSION_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${clear ? 0 : SESSION_SECONDS}${secure ? '; Secure' : ''}`; }
-export function sealTicket(data, secret, now = Date.now()) {
+export function sealTicket(data, secret, now = Date.now(), ttl = 900000) {
   const key = digest(`scenelingo-tickets:${secret}`), iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', key, iv);
-  const encrypted = Buffer.concat([cipher.update(JSON.stringify({ ...data, exp: now + 900000 })), cipher.final()]);
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify({ ...data, exp: now + ttl })), cipher.final()]);
   return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString('base64url');
 }
 export function openTicket(token, secret, now = Date.now()) {

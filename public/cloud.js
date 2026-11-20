@@ -5,6 +5,7 @@ document.body.append(dialog);
 dialog.addEventListener('cancel', event => event.preventDefault());
 const banner = document.createElement('div'); banner.id = 'cloud-banner'; banner.className = 'inline-note cloud-banner'; banner.hidden = true; document.querySelector('.topbar').after(banner);
 const logout = document.createElement('button'); logout.id = 'cloud-logout'; logout.className = 'button ghost compact'; logout.textContent = 'Sair'; logout.hidden = true; document.querySelector('.topbar').append(logout);
+const automatic = document.createElement('article'); automatic.className = 'feature-card spaced'; automatic.innerHTML = `<span class="step-tag">INSTALAÇÃO ÚNICA</span><h2>Inglês automático no Stremio / Nuvio</h2><p>Instale este manifesto uma vez. Ao abrir um filme ou episódio, o addon busca as legendas em inglês e português na fonte automaticamente. Você não precisa importar legendas nem cadastrar episódios neste site.</p><input id="automatic-manifest" readonly aria-label="Manifesto automático"><p>Escolha a faixa SceneLingo no player. A disponibilidade e a sincronia dependem das legendas da fonte. A progressiva automática usa frases inteiras; a tradução palavra por palavra exige alinhamento que SRT comum não fornece.</p><a class="button primary" id="automatic-install">Instalar no Stremio</a>`; document.querySelector('#view-integrations').prepend(automatic);
 logout.onclick = async () => { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); location.reload(); };
 export function requestLogin() {
   if (loginPromise) return loginPromise;
@@ -28,9 +29,11 @@ export async function cloudFetch(url, options) {
   return response;
 }
 export function showCloudState(value) {
+  document.querySelector('#automatic-manifest').value = `${value.baseUrl.replace(/\/$/, '')}/manifest.json`;
+  document.querySelector('#automatic-install').href = document.querySelector('#automatic-manifest').value.replace(/^https?:\/\//, 'stremio://');
   banner.hidden = !value.readOnly;
   banner.textContent = value.readOnly ? 'Modo demonstração: ajustes temporários. Para criar sessões permanentes, configure a chave de administração e o banco Redis da sua instalação.' : '';
-  document.querySelector('.beta').textContent = value.readOnly ? 'v1.1 · demonstração' : 'v1.1 · nuvem';
+  document.querySelector('.beta').textContent = value.readOnly ? 'v1.3 · demonstração' : 'v1.3 · nuvem';
   document.querySelector('.local-status').textContent = 'Vídeos e gravações ficam neste dispositivo';
   logout.hidden = !value.authenticated;
 }

@@ -1,6 +1,43 @@
-# SceneLingo para Vercel
+# SceneLingo automático para Vercel
 
 Porte da versão local para **Vercel Functions com Node.js 24**, frontend estático e **Upstash Redis via HTTPS**. A extensão Chrome/Edge continua incluída em `extension/`.
+
+
+## Instalação única: legendas automáticas
+
+Depois do deploy, instale **apenas uma vez** este endereço no Stremio/Nuvio:
+
+```text
+https://SEU-DOMINIO.vercel.app/manifest.json
+```
+
+Ao abrir um filme ou episódio, o player solicita o ID e os metadados ao addon. O SceneLingo consulta a fonte, procura inglês/português e oferece as faixas de estudo automaticamente. Não é necessário cadastrar o título, importar SRT ou visitar o estúdio a cada episódio. Selecione a faixa SceneLingo no player; a escolha automática da faixa padrão pertence às configurações do próprio player.
+
+A busca principal consulta diretamente o catálogo OpenSubtitles, em inglês, português brasileiro e português europeu. O addon oficial OpenSubtitles v3 participa como alternativa; uma falha nessa alternativa não bloqueia a fonte principal. Para usar seu addon de legendas preferido, configure `SUBTITLE_ADDON_URL` uma vez nas variáveis da Vercel. A disponibilidade não é garantida: se a fonte não retornar inglês, o addon não inventa uma faixa. Se retornar apenas inglês, oferece esse idioma. Os IDs/hashes e metadados recebidos do player são encaminhados à fonte para ajudar na seleção da versão correta.
+
+As buscas são armazenadas em cache Redis por uma hora; legendas EN/PT combinadas pelo tempo ficam em cache por sete dias. Se um download falhar, o addon tenta até duas alternativas automaticamente. Versões diferentes podem exigir ajuste de sincronia; são oferecidas até três opções da fonte. Falha do cache não impede o download da legenda.
+
+### Configuração global opcional
+
+- `AUTO_MODE=delayed`: faixa preferencial oferecida primeiro. Alternativas: `progressive`, `bilingual`, `english`.
+- `AUTO_TRANSLATION_DELAY=1000`: tempo antes de revelar português, em milissegundos.
+- `AUTO_SHOW_ORIGINAL=true`: manter inglês como apoio na progressiva.
+- `AUTO_SUBTITLE_OFFSET=0`: ajuste global de sincronia, em milissegundos.
+
+**Distinção importante:** esta versão automatiza a obtenção das legendas existentes. Um SRT comum não contém correspondência entre palavras em inglês e português. Por isso a faixa automática progressiva usa frases inteiras. O efeito exato palavra por palavra continua dependendo de alinhamentos de tradução; não foi substituído por uma divisão arbitrária da frase. Shadowing com controle de pausa/loop continua no estúdio ou na extensão; o protocolo nativo não oferece esses comandos ao addon.
+
+Consulta real realizada com a fonte principal: Harry Potter 1 retornou 73 opções em inglês e 38 em PT-BR; Harry Potter 2 retornou 84 e 67; Breaking Bad S01E01 retornou 16 e 14. Um arquivo de cada idioma foi baixado e analisado nos três casos. O pipeline master gerou SRT bilíngue automaticamente para Harry Potter 1 e Breaking Bad S01E01. A sincronia com uma versão específica do vídeo não foi verificada assistindo ao filme.
+
+## Fontes master
+
+A versão 1.3 consulta as fontes em paralelo, remove URLs duplicadas, prioriza PT-BR e considera o nome da versão do vídeo e a popularidade da legenda.
+
+- **Principal, já integrada sem chave:** OpenSubtitles REST direto. Testada com download real de EN/PT-BR nos títulos acima.
+- **Alternativa padrão:** OpenSubtitles v3 oficial.
+- **Outros addons:** `SUBTITLE_ADDON_URLS` aceita manifestos adicionais separados por vírgula. `SUBTITLE_ADDON_URL` define uma alternativa preferencial.
+- **Agregador opcional:** `WYZIE_API_KEY` ativa a API Wyzie, que reúne outros provedores conforme o plano da chave. Não é necessário para os casos testados. Nenhuma conta, chave ou assinatura foi criada automaticamente.
+
+A API Wyzie requer chave e pode cobrar por fontes/consultas conforme o plano; por isso a integração é opcional. Referências: [documentação Wyzie](https://docs.wyzie.io/subs/usage/direct), [implementação independente do provedor REST no SubSense](https://github.com/NepiRaw/Stremio-SubSense/blob/main/src/providers/OpenSubtitlesProvider.js).
 
 ## Publicar
 
@@ -36,7 +73,7 @@ Guarde a chave e digite-a na tela de entrada do estúdio. O navegador recebe um 
 
 Esta é uma instalação pessoal com uma chave de administração compartilhada, não uma plataforma com contas e bibliotecas separadas para vários usuários.
 
-## Instalar no Stremio ou Nuvio
+## Modo avançado: sessões importadas manualmente
 
 1. Entre no seu site Vercel usando a chave.
 2. Importe uma sessão JSON SceneLingo ou suas legendas EN/PT em SRT/VTT.

@@ -12,7 +12,7 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 http.createServer(async (req, res) => {
   for (const header of deployment.headers[0].headers) res.setHeader(header.key, header.value);
   const url = new URL(req.url, 'http://localhost');
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/a/')) return handler(req, res);
+  if (/^\/(api|a|auto|subtitles)\//.test(url.pathname) || url.pathname === '/manifest.json') return handler(req, res);
   const publicDir = path.join(root, 'public'), target = path.resolve(publicDir, '.' + decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
   if (!target.startsWith(publicDir + path.sep)) { res.writeHead(403); return res.end(); }
   try { if (!(await stat(target)).isFile()) throw new Error(); res.writeHead(200, { 'Content-Type': mime[path.extname(target)] || 'application/octet-stream', 'Cache-Control': 'no-store' }); res.end(await readFile(target)); }

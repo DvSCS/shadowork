@@ -23,6 +23,8 @@ export function createStorage(env, fetcher = fetch) {
   const json = profile => { const serialized = JSON.stringify(profile); if (Buffer.byteLength(serialized) > MAX_PROFILE_BYTES) throw fail('A sessão excede 3 MB. Divida a legenda em trechos menores.', 413); return serialized; };
   return {
     configured,
+    async cacheGet(id) { if (!configured) return null; const raw = await command('GET', `${base}:auto:${id}`); return raw ? JSON.parse(raw) : null; },
+    async cachePut(id, value, ttl = 604800) { if (configured) await command('SET', `${base}:auto:${id}`, JSON.stringify(value), 'EX', ttl); },
     async list() { const values = await command('HVALS', index); return (values || []).map(raw => JSON.parse(raw)).sort((a, b) => b.updatedAt - a.updatedAt); },
     async get(id) { const raw = await command('GET', key(id)); return raw ? JSON.parse(raw) : null; },
     async create(profile) {

@@ -17,3 +17,8 @@ test('downloads aceitam SRT simples ou gzip, e recusam URLs não HTTP', async ()
   assert.throws(() => httpUrl('file:///etc/passwd'));
   await assert.rejects(downloadSubtitles('https://files.example/a.zip', async () => new Response('not subtitles')), /SRT/);
 });
+test('legendas antigas preservam acentos em Windows-1252', async () => {
+  const bytes = Buffer.from('1\n00:00:01,000 --> 00:00:02,000\nOl\xe1. Voc\xea est\xe1 a\xed?\n', 'latin1');
+  const result = await downloadSubtitles('https://files.example/old.srt', async () => new Response(bytes));
+  assert.equal(result[0].text, 'Olá. Você está aí?');
+});
