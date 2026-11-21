@@ -20,9 +20,26 @@ export function addonSecret(env) {
   throw fail('Configure o Redis ou ADDON_SECRET para ativar os links do addon.', 503);
 }
 function choosePortuguese(english, portuguese, filename) {
-  const ignored = new Set(['the', 'and', 'uma', 'com', '1080p', '720p', '2160p', 'x264', 'x265', 'h264', 'h265', 'hevc', 'aac', 'ddp']);
+  const ignored = new Set(['the', 'and', 'uma', 'com', '1080p', '720p', '2160p', 'x264', 'x265', 'h264', 'h265', 'hevc', 'aac', 'ddp', 'web', 'dl']);
+  const tags = value => new Set((normalize(value).match(/\b(bluray|brrip|webrip|webdl|hdtv|dvdrip|remux|cam|telesync|proper|repack)\b/g) || []));
+  const enTags = tags(english.label);
+  const fileTags = tags(filename || '');
   const tokens = new Set(normalize(`${english.label} ${filename || ''}`).split(' ').filter(t => t.length > 2 && !ignored.has(t)));
-  return portuguese.map((candidate, index) => ({ candidate, score: (candidate.exactHash === english.exactHash ? 100 : 0) + (candidate.exactHash ? 100 : 0) + normalize(candidate.label).split(' ').reduce((sum, token) => sum + (tokens.has(token) ? 8 : 0), 0) + (candidate.region === 'pt-BR' ? 3 : 0) - index * .001 })).sort((a, b) => b.score - a.score)[0]?.candidate;
+
+  return portuguese.map((candidate, index) => {
+    const candTags = tags(candidate.label);
+    const hasSameTag = [...enTags].some(t => candTags.has(t)) || [...fileTags].some(t => candTags.has(t));
+    const tagBonus = hasSameTag ? 60 : (enTags.size && candTags.size ? -30 : 0);
+    const exactHashBonus = (candidate.exactHash && english.exactHash) ? 200 : (candidate.exactHash ? 100 : 0);
+    const tokenMatches = normalize(candidate.label).split(' ').reduce((sum, token) => sum + (tokens.has(token) ? 10 : 0), 0);
+    const regionBonus = candidate.region === 'pt-BR' ? 5 : 0;
+    const sameSourceBonus = candidate.source && english.source && candidate.source === english.source ? 15 : 0;
+
+    return {
+      candidate,
+      score: exactHashBonus + tagBonus + tokenMatches + regionBonus + sameSourceBonus - index * 0.001
+    };
+  }).sort((a, b) => b.score - a.score)[0]?.candidate;
 }
 function shortRelease(item, index) {
   if (item.exactHash) return '✓ arquivo';
@@ -49,6 +66,8 @@ export function createAutomatic({ env, storage, search = searchMaster, download 
       const maxReleases = Math.min(3, Math.max(1, Number.parseInt(env.AUTO_MAX_RELEASES || '2', 10) || 2));
       const english = results.filter(item => item.language === 'en').slice(0, maxReleases), portuguese = results.filter(item => item.language === 'pt');
       const subtitles = [];
+      const modes = [automaticConfig(env).mode, ...AUTO_MODES].filter((m, i, all) => all.indexOf(m) === i && AUTO_MODES.includes(m));
+
       for (const [index, en] of english.entries()) {
         const pt = choosePortuguese(en, portuguese, extra.get('filename'));
         const enFallbacks = english.filter(row => row.url !== en.url).map(row => row.url).slice(0, 2);
@@ -63,11 +82,27 @@ export function createAutomatic({ env, storage, search = searchMaster, download 
           try { await storage.cachePut(`auto-ticket:${shortId}`, ticketData, 2 * 86400); ticket = shortId; } catch { /* fall through */ }
         }
         if (!ticket) ticket = sealCompressedTicket(ticketData, secret, Date.now(), 2 * 86400000);
-        const modes = [automaticConfig(env).mode, ...AUTO_MODES].filter((m, i, all) => all.indexOf(m) === i && AUTO_MODES.includes(m));
         for (const mode of pt ? modes : ['english']) {
           const modeName = ({ progressive: 'Progressiva', delayed: 'Atraso EN→PT', bilingual: 'Dupla EN + PT', english: 'Só inglês' })[mode];
           const label = `SL ${shortRelease(en, index)} · ${modeName}`;
           subtitles.push({ id: `scenelingo-auto-${index}-${mode}`, lang: mode === 'english' ? 'eng' : 'por', label, name: label, url: `${base}/auto/${ticket}/${mode}.srt` });
+        }
+        // FPS sync variants for the first (best-matched) release: most streaming
+        // content uses 23.976fps but many subtitle files are timed at 25fps (PAL)
+        // or vice-versa, causing progressive drift over the runtime.
+        if (index === 0 && pt) {
+          const preferredMode = automaticConfig(env).mode;
+          const modeName = ({ progressive: 'Progressiva', delayed: 'Atraso EN→PT', bilingual: 'Dupla EN + PT', english: 'Só inglês' })[preferredMode];
+          for (const [scale, fpsLabel] of [[23.976 / 25, '25→24fps'], [25 / 23.976, '24→25fps']]) {
+            const fpsData = { ...ticketData, fpsScale: scale };
+            let fpsTicket;
+            if (storage.configured) {
+              const fpsId = createHash('sha256').update(JSON.stringify(fpsData)).digest('hex').slice(0, 32);
+              try { await storage.cachePut(`auto-ticket:${fpsId}`, fpsData, 2 * 86400); fpsTicket = fpsId; } catch { /* fall through */ }
+            }
+            if (!fpsTicket) fpsTicket = sealCompressedTicket(fpsData, secret, Date.now(), 2 * 86400000);
+            subtitles.push({ id: `scenelingo-auto-sync-${fpsLabel}-${preferredMode}`, lang: 'por', label: `SL sync ${fpsLabel} · ${modeName}`, name: `SL sync ${fpsLabel} · ${modeName}`, url: `${base}/auto/${fpsTicket}/${preferredMode}.srt` });
+          }
         }
       }
       return { subtitles, cacheMaxAge: 0 };
@@ -86,7 +121,7 @@ export function createAutomatic({ env, storage, search = searchMaster, download 
       if (data.purpose !== 'automatic-subtitle' || typeof data.en !== 'string') throw fail('Link de legenda inválido.');
       // Bump the cache recipe whenever pairing/synchronization changes, so a new
       // deploy never keeps serving captions generated by an older buggy build.
-      const id = createHash('sha256').update(JSON.stringify({ recipe: 'sync-v2', en: data.en, pt: data.pt })).digest('hex');
+      const id = createHash('sha256').update(JSON.stringify({ recipe: 'sync-v3', en: data.en, pt: data.pt })).digest('hex');
       let cues;
       try { cues = await storage.cacheGet(id); } catch { /* Cache failure does not prevent watching. */ }
       if (!cues) {
@@ -102,6 +137,10 @@ export function createAutomatic({ env, storage, search = searchMaster, download 
         cues = pairSubtitles(en, synchronized.cues);
         try { if (Buffer.byteLength(JSON.stringify(cues)) <= 3000000) await storage.cachePut(id, cues); } catch { /* The fetched subtitles are still usable. */ }
       }
+      // Apply FPS rescaling when the ticket carries a correction factor.
+      // This handles the common 23.976/25 fps mismatch between subtitle files
+      // timed for PAL (25fps) and streaming video (usually 23.976fps).
+      if (data.fpsScale && data.fpsScale !== 1) cues = cues.map(cue => ({ ...cue, start: Math.max(0, Math.round(cue.start * data.fpsScale)), end: Math.max(1, Math.round(cue.end * data.fpsScale)) }));
       return toSrt(cues, { ...data.config, mode });
     },
   };

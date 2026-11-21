@@ -69,7 +69,7 @@ export function createHandler({ env = process.env, storage = createStorage(env),
         if (parts[0] === 'manifest.json') return send(200, automatic.manifest(automaticBase));
         if (parts[0] === 'subtitles' && parts[2]) {
           const extra = new URLSearchParams((parts[3] || '').replace(/\.json$/, ''));
-          for (const field of ['videoID', 'videoId', 'videoHash', 'videoSize', 'filename']) if (!extra.has(field) && url.searchParams.has(field)) extra.set(field, url.searchParams.get(field).replace(/\.json$/, ''));
+          for (const field of ['videoID', 'videoId', 'videoHash', 'videoSize', 'filename', 'fileHash', 'fileSize']) if (!extra.has(field) && url.searchParams.has(field)) extra.set(field, url.searchParams.get(field).replace(/\.json$/, ''));
           return send(200, await automatic.options(parts[1], parts[2].replace(/\.json$/, ''), extra.toString(), automaticBase));
         }
         if (parts[0] === 'auto' && parts[1] && parts[2]?.endsWith('.srt')) return send(200, await automatic.subtitle(parts[1], parts[2].slice(0, -4)), 'application/x-subrip; charset=utf-8');
