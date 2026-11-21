@@ -49,7 +49,7 @@ export function createHandler({ env = process.env, storage = createStorage(env),
     function send(status, value, mime = 'application/json; charset=utf-8', headers = {}) {
       let text = typeof value === 'string' ? value : JSON.stringify(value);
       if (Buffer.byteLength(text) > 4000000) { status = 413; text = JSON.stringify({ error: 'A resposta excede 4 MB. Divida a sessão em trechos menores antes de importar.' }); mime = 'application/json; charset=utf-8'; }
-      res.writeHead(status, { 'Content-Type': mime, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store', 'Vercel-CDN-Cache-Control': 'no-store', ...(addon ? { 'Access-Control-Allow-Origin': '*' } : {}), ...headers });
+      res.writeHead(status, { 'Content-Type': mime, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store', 'Vercel-CDN-Cache-Control': 'no-store', ...(addon ? { 'Access-Control-Allow-Origin': '*' } : { 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'DENY' }), ...headers });
       res.end(req.method === 'HEAD' ? undefined : text);
     }
     try {

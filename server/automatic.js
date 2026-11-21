@@ -54,9 +54,15 @@ export function createAutomatic({ env, storage, search = searchMaster, download 
         const enFallbacks = english.filter(row => row.url !== en.url).map(row => row.url).slice(0, 2);
         const ptFallbacks = portuguese.filter(row => row.url !== pt?.url).map(row => row.url).slice(0, 2);
         const ticketData = { purpose: 'automatic-subtitle', type, videoId, en: en.url, pt: pt?.url || '', enFallbacks, ptFallbacks, config: automaticConfig(env) };
-        // Self-contained: no Redis lookup is needed when the native player opens
-        // the track. Compression keeps the encrypted URL below client limits.
-        const ticket = sealCompressedTicket(ticketData, secret, Date.now(), 2 * 86400000);
+        // Prefer a short Redis-backed ID to keep the URL within player limits
+        // (~2048 chars). Fall back to the self-contained compressed ticket
+        // when Redis is unavailable or the write fails.
+        let ticket;
+        if (storage.configured) {
+          const shortId = createHash('sha256').update(JSON.stringify(ticketData)).digest('hex').slice(0, 32);
+          try { await storage.cachePut(`auto-ticket:${shortId}`, ticketData, 2 * 86400); ticket = shortId; } catch { /* fall through */ }
+        }
+        if (!ticket) ticket = sealCompressedTicket(ticketData, secret, Date.now(), 2 * 86400000);
         const modes = [automaticConfig(env).mode, ...AUTO_MODES].filter((m, i, all) => all.indexOf(m) === i && AUTO_MODES.includes(m));
         for (const mode of pt ? modes : ['english']) {
           const modeName = ({ progressive: 'Progressiva', delayed: 'Atraso EN→PT', bilingual: 'Dupla EN + PT', english: 'Só inglês' })[mode];
