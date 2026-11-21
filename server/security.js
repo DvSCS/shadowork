@@ -1,4 +1,5 @@
 import { createHmac, createHash, randomBytes, timingSafeEqual, createCipheriv, createDecipheriv } from 'node:crypto';
+import { deflateRawSync, inflateRawSync } from 'node:zlib';
 import { fail } from './domain.js';
 export const SESSION_COOKIE = 'scenelingo_session';
 const SESSION_SECONDS = 7 * 86400;
@@ -33,6 +34,23 @@ export function openTicket(token, secret, now = Date.now()) {
     const bytes = Buffer.from(token, 'base64url');
     const decipher = createDecipheriv('aes-256-gcm', digest(`scenelingo-tickets:${secret}`), bytes.subarray(0, 12)); decipher.setAuthTag(bytes.subarray(12, 28));
     const value = JSON.parse(Buffer.concat([decipher.update(bytes.subarray(28)), decipher.final()]));
+    if (!Number.isFinite(value.exp) || value.exp <= now) throw new Error();
+    return value;
+  } catch { throw fail('Pesquisa inválida ou expirada. Busque as legendas novamente.'); }
+}
+export function sealCompressedTicket(data, secret, now = Date.now(), ttl = 900000) {
+  const key = digest(`scenelingo-compressed-tickets:${secret}`), iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', key, iv);
+  const packed = deflateRawSync(Buffer.from(JSON.stringify({ ...data, exp: now + ttl })), { level: 9 });
+  const encrypted = Buffer.concat([cipher.update(packed), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString('base64url');
+}
+export function openCompressedTicket(token, secret, now = Date.now()) {
+  try {
+    if (typeof token !== 'string' || token.length > 6000) throw new Error();
+    const bytes = Buffer.from(token, 'base64url');
+    const decipher = createDecipheriv('aes-256-gcm', digest(`scenelingo-compressed-tickets:${secret}`), bytes.subarray(0, 12)); decipher.setAuthTag(bytes.subarray(12, 28));
+    const packed = Buffer.concat([decipher.update(bytes.subarray(28)), decipher.final()]);
+    const value = JSON.parse(inflateRawSync(packed, { maxOutputLength: 100000 }).toString('utf8'));
     if (!Number.isFinite(value.exp) || value.exp <= now) throw new Error();
     return value;
   } catch { throw fail('Pesquisa inválida ou expirada. Busque as legendas novamente.'); }
