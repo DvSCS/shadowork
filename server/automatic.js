@@ -10,16 +10,22 @@ export const AUTO_MODES = ['progressive', 'delayed', 'bilingual', 'english'];
 export function automaticConfig(env) {
   return config({ mode: env.AUTO_MODE || 'delayed', translationDelay: Number(env.AUTO_TRANSLATION_DELAY || 1000), showOriginal: env.AUTO_SHOW_ORIGINAL !== 'false', subtitleOffset: Number(env.AUTO_SUBTITLE_OFFSET || 0) });
 }
-function requireSecret(env) { if (!adminConfigured(env)) throw fail('Configure ADMIN_TOKEN uma única vez para ativar o addon automático.', 503); }
+export function addonSecret(env) {
+  if (typeof env.ADDON_SECRET === 'string' && env.ADDON_SECRET.length >= 32) return env.ADDON_SECRET;
+  if (adminConfigured(env)) return env.ADMIN_TOKEN;
+  const redisToken = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
+  if (typeof redisToken === 'string' && redisToken.length >= 16) return createHash('sha256').update(`scenelingo-public-addon:${redisToken}`).digest('base64url');
+  throw fail('Configure o Redis ou ADDON_SECRET para ativar os links do addon.', 503);
+}
 function choosePortuguese(english, portuguese, filename) {
   const tokens = new Set(normalize(`${english.label} ${filename || ''}`).split(' ').filter(t => t.length > 2));
   return portuguese.map((candidate, index) => ({ candidate, score: normalize(candidate.label).split(' ').reduce((sum, token) => sum + (tokens.has(token) ? 1 : 0), 0) - index * .001 })).sort((a, b) => b.score - a.score)[0]?.candidate;
 }
 export function createAutomatic({ env, storage, search = searchMaster, download = downloadSubtitles }) {
   return {
-    manifest(base) { return { id: 'community.scenelingo.automatic', version: '1.3.0', name: 'SceneLingo · Inglês automático', description: 'Busca inglês e português automaticamente para o filme ou episódio aberto. Instale uma vez; sem importar legendas ou cadastrar episódios. Disponibilidade e sincronia dependem da fonte.', resources: ['subtitles'], types: ['movie', 'series'], catalogs: [], logo: `${base}/assets/logo.svg`, behaviorHints: { configurable: false } }; },
+    manifest(base) { return { id: 'community.scenelingo.automatic', version: '1.3.1', name: 'SceneLingo · Inglês automático', description: 'Busca inglês e português automaticamente para o filme ou episódio aberto. Instale uma vez; sem importar legendas ou cadastrar episódios. Disponibilidade e sincronia dependem da fonte.', resources: ['subtitles'], types: ['movie', 'series'], catalogs: [], logo: `${base}/assets/logo.svg`, behaviorHints: { configurable: false } }; },
     async options(type, requestedId, rawExtra, base) {
-      requireSecret(env);
+      const secret = addonSecret(env);
       if (!['movie', 'series'].includes(type) || !/^[\w:.-]{1,180}$/.test(requestedId)) throw fail('Vídeo inválido.');
       const extra = new URLSearchParams(rawExtra || '');
       const videoId = extra.get('videoID') || extra.get('videoId') || requestedId;
@@ -37,16 +43,19 @@ export function createAutomatic({ env, storage, search = searchMaster, download 
         const pt = choosePortuguese(en, portuguese, extra.get('filename'));
         const enFallbacks = english.filter(row => row.url !== en.url).map(row => row.url).slice(0, 2);
         const ptFallbacks = portuguese.filter(row => row.url !== pt?.url).map(row => row.url).slice(0, 2);
-        const ticket = sealTicket({ purpose: 'automatic-subtitle', type, videoId, en: en.url, pt: pt?.url || '', enFallbacks, ptFallbacks, config: automaticConfig(env) }, env.ADMIN_TOKEN, Date.now(), 2 * 86400000);
+        const ticket = sealTicket({ purpose: 'automatic-subtitle', type, videoId, en: en.url, pt: pt?.url || '', enFallbacks, ptFallbacks, config: automaticConfig(env) }, secret, Date.now(), 2 * 86400000);
         const modes = [automaticConfig(env).mode, ...AUTO_MODES].filter((m, i, all) => all.indexOf(m) === i && AUTO_MODES.includes(m));
-        for (const mode of pt ? modes : ['english']) subtitles.push({ id: `scenelingo-auto-${index}-${mode}`, lang: mode === 'english' ? 'eng' : 'por', name: `SceneLingo · ${({ progressive: 'Progressiva por frases', delayed: 'Inglês → português com atraso', bilingual: 'Inglês + português', english: 'Somente inglês' })[mode]} · ${en.source || 'opção ' + (index + 1)}`, url: `${base}/auto/${ticket}/${mode}.srt` });
+        for (const mode of pt ? modes : ['english']) {
+          const label = `SceneLingo · ${({ progressive: 'Progressiva por frases', delayed: 'Inglês → português com atraso', bilingual: 'Inglês + português', english: 'Somente inglês' })[mode]} · ${en.source || 'opção ' + (index + 1)}`;
+          subtitles.push({ id: `scenelingo-auto-${index}-${mode}`, lang: mode === 'english' ? 'eng' : 'por', label, name: label, url: `${base}/auto/${ticket}/${mode}.srt` });
+        }
       }
       return { subtitles, cacheMaxAge: 0 };
     },
     async subtitle(ticket, mode) {
-      requireSecret(env);
+      const secret = addonSecret(env);
       if (!AUTO_MODES.includes(mode)) throw fail('Modo inválido.');
-      const data = openTicket(ticket, env.ADMIN_TOKEN);
+      const data = openTicket(ticket, secret);
       if (data.purpose !== 'automatic-subtitle' || typeof data.en !== 'string') throw fail('Link de legenda inválido.');
       const id = createHash('sha256').update(JSON.stringify({ en: data.en, pt: data.pt })).digest('hex');
       let cues;

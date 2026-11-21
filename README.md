@@ -3,6 +3,12 @@
 Porte da versão local para **Vercel Functions com Node.js 24**, frontend estático e **Upstash Redis via HTTPS**. A extensão Chrome/Edge continua incluída em `extension/`.
 
 
+## Correção 1.3.1 para Stremio
+
+O addon automático público funciona com as credenciais Redis já configuradas, mesmo sem `ADMIN_TOKEN`. A administração continua exigindo `ADMIN_TOKEN`. Os links usam uma chave derivada do token privado do banco; o token nunca é devolvido ao player. Também é possível definir `ADDON_SECRET` com pelo menos 32 caracteres. Trocar o segredo invalida links antigos; reabra a reprodução.
+
+As variantes agora incluem o campo oficial `label`. No seletor de idiomas, os modos bilíngues ficam em Português e o modo somente inglês fica em English. Na coluna de variantes, escolha a origem SceneLingo. O OpenSubtitles v3 instalado separadamente continua aparecendo como outra origem.
+
 ## Instalação única: legendas automáticas
 
 Depois do deploy, instale **apenas uma vez** este endereço no Stremio/Nuvio:

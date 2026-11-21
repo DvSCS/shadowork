@@ -46,3 +46,12 @@ test('rotas públicas automáticas funcionam pelos rewrites da Vercel', async ()
   const path = new URL(result.json.subtitles[0].url).pathname;
   const sub = await request(handler, `/api/index?__route=${path}`); assert.equal(sub.status, 200); assert.match(sub.text, /-->/);
 });
+test('addon público funciona com Redis sem ADMIN_TOKEN; variantes têm label oficial', async () => {
+  const f = fixture(), env = { KV_REST_API_TOKEN: 'private-redis-token-test-with-32-characters' }, auto = createAutomatic({ ...f, env });
+  const result = await auto.options('movie', 'tt0241527', '', 'https://example.com');
+  const item = result.subtitles.find(s => s.id.endsWith('bilingual'));
+  assert.match(item.label, /Inglês \+ português/); assert.equal(item.lang, 'por');
+  const [, , ticket] = new URL(item.url).pathname.split('/');
+  assert.match(await auto.subtitle(ticket, 'bilingual'), /I work/);
+  assert.ok(!item.url.includes(env.KV_REST_API_TOKEN));
+});
