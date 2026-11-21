@@ -54,4 +54,5 @@ test('addon público funciona com Redis sem ADMIN_TOKEN; variantes têm label of
   const [, , ticket] = new URL(item.url).pathname.split('/');
   assert.match(await auto.subtitle(ticket, 'bilingual'), /I work/);
   assert.ok(!item.url.includes(env.KV_REST_API_TOKEN));
+  assert.ok(item.url.length < 160, `URL longa demais para players nativos: ${item.url.length}`);
 });

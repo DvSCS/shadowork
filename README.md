@@ -3,11 +3,11 @@
 Porte da versão local para **Vercel Functions com Node.js 24**, frontend estático e **Upstash Redis via HTTPS**. A extensão Chrome/Edge continua incluída em `extension/`.
 
 
-## Correção 1.4.0 para Stremio
+## Correção 1.4.1 para Stremio
 
 O addon automático público funciona com as credenciais Redis já configuradas, mesmo sem `ADMIN_TOKEN`. A administração continua exigindo `ADMIN_TOKEN`. Os links usam uma chave derivada do token privado do banco; o token nunca é devolvido ao player. Também é possível definir `ADDON_SECRET` com pelo menos 32 caracteres. Trocar o segredo invalida links antigos; reabra a reprodução.
 
-As variantes agora têm nomes curtos (`SL 1 · Atraso EN→PT`, `SL 1 · Dupla EN + PT`, `SL 1 · Progressiva`) no campo oficial `label`. A tradução é corrigida automaticamente contra os tempos do release inglês, inclusive atraso fixo e a deriva comum entre 23.976/25 fps. No seletor de idiomas, os modos bilíngues ficam em Português e o modo somente inglês fica em English. O OpenSubtitles v3 instalado separadamente continua aparecendo como outra origem.
+As variantes agora têm nomes curtos (`SL 1 · Atraso EN→PT`, `SL 1 · Dupla EN + PT`, `SL 1 · Progressiva`) no campo oficial `label`. Os links das faixas também são curtos e guardam os dados temporários no Redis, evitando o erro `loading failed` causado por URLs extensas em players nativos. A tradução é corrigida automaticamente contra os tempos do release inglês, inclusive atraso fixo e a deriva comum entre 23.976/25 fps. No seletor de idiomas, os modos bilíngues ficam em Português e o modo somente inglês fica em English.
 
 ## Instalação única: legendas automáticas
 
