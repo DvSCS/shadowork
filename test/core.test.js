@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { config, parseSubtitles, pairSubtitles, validateCues, activeCue, subtitleFrame, frameText, toSrt, subtitleEvents, reviewCard, compareTranscript } from '../shared/core.js';
+import { config, parseSubtitles, pairSubtitles, synchronizeTranslation, validateCues, activeCue, subtitleFrame, frameText, toSrt, subtitleEvents, reviewCard, compareTranscript } from '../shared/core.js';
 import { DEMO } from '../shared/demo.js';
 
 const cue = { id: '1', start: 0, end: 4000, en: 'Work at a hospital.', pt: 'Trabalha em um hospital.', segments: [{ en: 'Work', pt: 'Trabalha', start: 0 }, { en: 'at', pt: 'em', start: 800 }, { en: 'a', pt: 'um', start: 1600 }, { en: 'hospital.', pt: 'hospital.', start: 2400 }] };
@@ -44,6 +44,14 @@ test('legendas combinam por tempo, aceitando divisões diferentes e offset', () 
   const en = [{ start: 1000, end: 3000, text: 'Hello, world.' }];
   const pt = [{ start: 0, end: 1000, text: 'Olá,' }, { start: 1000, end: 2000, text: 'mundo.' }];
   assert.equal(pairSubtitles(en, pt, 1000)[0].pt, 'Olá, mundo.');
+});
+test('corrige atraso e deriva de fps entre os releases inglês e português', () => {
+  const en = Array.from({ length: 80 }, (_, i) => ({ start: 10000 + i * 7000 + (i % 3) * 350, end: 12500 + i * 7000 + (i % 3) * 350, text: `English ${i}` }));
+  const scale = 25 / 23.976, offset = 6250;
+  const pt = en.map((item, i) => ({ start: Math.round((item.start - offset) / scale), end: Math.round((item.end - offset) / scale), text: `Português ${i}` }));
+  const synced = synchronizeTranslation(en, pt);
+  assert.equal(synced.changed, true); assert.ok(Math.abs(synced.scale - scale) < .002); assert.ok(Math.abs(synced.offset - offset) <= 1000);
+  assert.ok(Math.abs(synced.cues[50].start - en[50].start) < 1000);
 });
 test('validação recusa alinhamento errado e marcações parciais', () => {
   assert.equal(validateCues([cue])[0].timing, 'provided');

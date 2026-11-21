@@ -77,7 +77,7 @@ export function createHandler({ env = process.env, storage = createStorage(env),
         const profile = parts[1] === DEMO.id ? demo() : storage.configured ? await storage.get(parts[1]) : null;
         if (!profile) throw fail('Sessão não encontrada.', 404);
         const publicBase = (env.BASE_URL || origin).replace(/\/$/, ''), base = `${publicBase}/a/${profile.id}`;
-        if (parts[2] === 'manifest.json') return send(200, { id: `community.scenelingo.${profile.id}`, version: '1.3.1', name: `SceneLingo · ${profile.title}`, description: 'Inglês com legendas progressivas, configuradas no estúdio SceneLingo.', resources: ['subtitles'], types: ['movie', 'series'], catalogs: [], behaviorHints: { configurable: true, configurationRequired: false }, logo: `${publicBase}/assets/logo.svg` });
+        if (parts[2] === 'manifest.json') return send(200, { id: `community.scenelingo.${profile.id}`, version: '1.4.0', name: `SceneLingo · ${profile.title}`, description: 'Inglês com legendas progressivas, configuradas no estúdio SceneLingo.', resources: ['subtitles'], types: ['movie', 'series'], catalogs: [], behaviorHints: { configurable: true, configurationRequired: false }, logo: `${publicBase}/assets/logo.svg` });
         if (parts[2] === 'subtitles' && parts[4] && (parts[4].endsWith('.json') || parts.length >= 6)) {
           const extra = new URLSearchParams((parts[5] || '').replace(/\.json$/, ''));
           // Some proxies expose &-separated Stremio path extras as query fields.
@@ -94,7 +94,7 @@ export function createHandler({ env = process.env, storage = createStorage(env),
         throw fail('Recurso não encontrado.', 404);
       }
       if (parts[0] !== 'api') throw fail('Rota não encontrada.', 404);
-      if (parts[1] === 'health' && req.method === 'GET') return send(200, { name: 'SceneLingo', version: '1.3.1', runtime: 'vercel-node', storageConfigured: storage.configured, adminConfigured: adminConfigured(env) });
+      if (parts[1] === 'health' && req.method === 'GET') return send(200, { name: 'SceneLingo', version: '1.4.0', runtime: 'vercel-node', storageConfigured: storage.configured, adminConfigured: adminConfigured(env) });
       const signedIn = authenticated(req, env), configured = adminConfigured(env);
       if (parts[1] === 'auth' && parts[2] === 'status' && req.method === 'GET') return send(200, { configured, authenticated: signedIn, storageConfigured: storage.configured, mode: configured && storage.configured ? 'cloud' : 'demo' });
       if (!['GET', 'HEAD'].includes(req.method)) checkOrigin(req, origin);

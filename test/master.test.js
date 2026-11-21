@@ -8,6 +8,13 @@ test('busca direta encontra EN e PT-BR e identifica temporada e episódio', asyn
   assert.ok(urls.every(url => url.includes('episode-3/imdbid-903747/season-2')));
   assert.ok(results.some(row => row.language === 'en')); assert.ok(results.some(row => row.region === 'pt-BR'));
 });
+test('hash e tamanho do vídeo têm prioridade sobre uma busca apenas por IMDb', async () => {
+  const urls = [];
+  const fetcher = async url => { urls.push(String(url)); return new Response(JSON.stringify([{ SubDownloadLink: `https://files.example/${urls.length}.gz`, SubFormat: 'srt', MovieReleaseName: 'release' }])); };
+  const results = await searchLegacy('movie', 'tt0241527', 'videoHash=0123456789abcdef&videoSize=123456789', fetcher);
+  assert.ok(urls.some(url => url.includes('moviebytesize-123456789/moviehash-0123456789abcdef')));
+  assert.equal(rankSources(results)[0].exactHash, true);
+});
 test('fonte secundária indisponível não impede os resultados da principal', async () => {
   const fetcher = async url => {
     if (String(url).includes('addon.example')) return new Response('offline', { status: 503 });

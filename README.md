@@ -3,11 +3,11 @@
 Porte da versão local para **Vercel Functions com Node.js 24**, frontend estático e **Upstash Redis via HTTPS**. A extensão Chrome/Edge continua incluída em `extension/`.
 
 
-## Correção 1.3.1 para Stremio
+## Correção 1.4.0 para Stremio
 
 O addon automático público funciona com as credenciais Redis já configuradas, mesmo sem `ADMIN_TOKEN`. A administração continua exigindo `ADMIN_TOKEN`. Os links usam uma chave derivada do token privado do banco; o token nunca é devolvido ao player. Também é possível definir `ADDON_SECRET` com pelo menos 32 caracteres. Trocar o segredo invalida links antigos; reabra a reprodução.
 
-As variantes agora incluem o campo oficial `label`. No seletor de idiomas, os modos bilíngues ficam em Português e o modo somente inglês fica em English. Na coluna de variantes, escolha a origem SceneLingo. O OpenSubtitles v3 instalado separadamente continua aparecendo como outra origem.
+As variantes agora têm nomes curtos (`SL 1 · Atraso EN→PT`, `SL 1 · Dupla EN + PT`, `SL 1 · Progressiva`) no campo oficial `label`. A tradução é corrigida automaticamente contra os tempos do release inglês, inclusive atraso fixo e a deriva comum entre 23.976/25 fps. No seletor de idiomas, os modos bilíngues ficam em Português e o modo somente inglês fica em English. O OpenSubtitles v3 instalado separadamente continua aparecendo como outra origem.
 
 ## Instalação única: legendas automáticas
 
@@ -19,7 +19,7 @@ https://SEU-DOMINIO.vercel.app/manifest.json
 
 Ao abrir um filme ou episódio, o player solicita o ID e os metadados ao addon. O SceneLingo consulta a fonte, procura inglês/português e oferece as faixas de estudo automaticamente. Não é necessário cadastrar o título, importar SRT ou visitar o estúdio a cada episódio. Selecione a faixa SceneLingo no player; a escolha automática da faixa padrão pertence às configurações do próprio player.
 
-A busca principal consulta diretamente o catálogo OpenSubtitles, em inglês, português brasileiro e português europeu. O addon oficial OpenSubtitles v3 participa como alternativa; uma falha nessa alternativa não bloqueia a fonte principal. Para usar seu addon de legendas preferido, configure `SUBTITLE_ADDON_URL` uma vez nas variáveis da Vercel. A disponibilidade não é garantida: se a fonte não retornar inglês, o addon não inventa uma faixa. Se retornar apenas inglês, oferece esse idioma. Os IDs/hashes e metadados recebidos do player são encaminhados à fonte para ajudar na seleção da versão correta.
+A busca consulta o agregador público SubSense (EN, PT-BR e PT-PT), o catálogo OpenSubtitles direto e o addon oficial OpenSubtitles v3 em paralelo. Isso evita depender do endpoint Legacy, que pode bloquear IPs da Vercel. Para usar seu addon de legendas preferido, configure `SUBTITLE_ADDON_URL` uma vez nas variáveis da Vercel. A disponibilidade não é garantida: se nenhuma fonte retornar inglês, o addon não inventa uma faixa. Os hashes, tamanhos, nomes e metadados recebidos do player são encaminhados às fontes; quando há hash OpenSubtitles exato, ele recebe prioridade máxima.
 
 As buscas são armazenadas em cache Redis por uma hora; legendas EN/PT combinadas pelo tempo ficam em cache por sete dias. Se um download falhar, o addon tenta até duas alternativas automaticamente. Versões diferentes podem exigir ajuste de sincronia; são oferecidas até três opções da fonte. Falha do cache não impede o download da legenda.
 

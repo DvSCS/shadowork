@@ -50,7 +50,7 @@ test('addon público funciona com Redis sem ADMIN_TOKEN; variantes têm label of
   const f = fixture(), env = { KV_REST_API_TOKEN: 'private-redis-token-test-with-32-characters' }, auto = createAutomatic({ ...f, env });
   const result = await auto.options('movie', 'tt0241527', '', 'https://example.com');
   const item = result.subtitles.find(s => s.id.endsWith('bilingual'));
-  assert.match(item.label, /Inglês \+ português/); assert.equal(item.lang, 'por');
+  assert.equal(item.label, 'SL 1 BluRay · Dupla EN + PT'); assert.equal(item.lang, 'por');
   const [, , ticket] = new URL(item.url).pathname.split('/');
   assert.match(await auto.subtitle(ticket, 'bilingual'), /I work/);
   assert.ok(!item.url.includes(env.KV_REST_API_TOKEN));

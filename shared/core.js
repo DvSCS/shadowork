@@ -79,6 +79,51 @@ export function pairSubtitles(english, portuguese, offset = 0) {
     return { id: `cue-${i + 1}`, start: cue.start, end: cue.end, en: cue.text, pt: [...new Set(matches)].join(' '), segments: [], timing: 'estimated', alignment: 'sentence' };
   });
 }
+
+function nearestDistance(sorted, value) {
+  let lo = 0, hi = sorted.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid] < value) lo = mid + 1; else hi = mid; }
+  return Math.min(lo < sorted.length ? Math.abs(sorted[lo] - value) : Infinity, lo ? Math.abs(sorted[lo - 1] - value) : Infinity);
+}
+function timingScore(reference, candidate, scale, offset) {
+  const ref = reference.map(c => (c.start + c.end) / 2), other = candidate.map(c => ((c.start + c.end) / 2) * scale + offset);
+  if (!ref.length || !other.length) return 0;
+  const oneWay = (from, to) => from.reduce((sum, time) => {
+    const distance = nearestDistance(to, time);
+    return sum + (distance <= 900 ? 1 : distance <= 2200 ? .55 : distance <= 4000 ? .15 : 0);
+  }, 0) / from.length;
+  return (oneWay(other, ref) + oneWay(ref, other)) / 2;
+}
+function quantile(values, ratio) { return values[Math.min(values.length - 1, Math.max(0, Math.round((values.length - 1) * ratio)))]; }
+
+// Corrects fixed delay and the common 23.976/25 fps drift between EN and PT.
+// This aligns subtitle releases to each other; it does not claim audio alignment.
+export function synchronizeTranslation(english, portuguese) {
+  if (english.length < 8 || portuguese.length < 8) return { cues: portuguese, scale: 1, offset: 0, score: 0, changed: false };
+  const en = english.map(c => (c.start + c.end) / 2), pt = portuguese.map(c => (c.start + c.end) / 2);
+  const enSpan = quantile(en, .9) - quantile(en, .1), ptSpan = quantile(pt, .9) - quantile(pt, .1);
+  const ratio = ptSpan > 10000 ? enSpan / ptSpan : 1;
+  const scales = [...new Set([1, 25 / 23.976, 23.976 / 25, ratio].filter(n => n >= .94 && n <= 1.06).map(n => Math.round(n * 100000) / 100000))];
+  const baseline = timingScore(english, portuguese, 1, 0);
+  let best = { scale: 1, offset: 0, score: baseline };
+  for (const scale of scales) {
+    const offsets = new Set([0]);
+    for (const q of [.05, .1, .25, .5, .75, .9, .95]) {
+      const center = quantile(en, q) - quantile(pt, q) * scale;
+      for (const delta of [-2000, -1000, 0, 1000, 2000]) offsets.add(Math.round((center + delta) / 250) * 250);
+    }
+    for (const offset of offsets) {
+      if (Math.abs(offset) > 180000) continue;
+      const score = timingScore(english, portuguese, scale, offset);
+      if (score > best.score) best = { scale, offset, score };
+    }
+  }
+  if (best.score < baseline + .06 || best.score < .32) return { cues: portuguese, scale: 1, offset: 0, score: baseline, changed: false };
+  return {
+    cues: portuguese.map(cue => ({ ...cue, start: Math.max(0, Math.round(cue.start * best.scale + best.offset)), end: Math.max(1, Math.round(cue.end * best.scale + best.offset)) })).filter(cue => cue.end > cue.start),
+    ...best, changed: true,
+  };
+}
 export function validateCues(input) {
   if (!Array.isArray(input) || input.length === 0 || input.length > 15000) throw new Error('Use de 1 a 15.000 falas.');
   return input.map((cue, i) => {
